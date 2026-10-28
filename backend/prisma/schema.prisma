@@ -1,0 +1,358 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  JOB_SEEKER
+  RECRUITER
+  ADMIN
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW
+  OFFERED
+  REJECTED
+  WITHDRAWN
+}
+
+enum NotificationType {
+  APPLICATION_STATUS
+  NEW_MESSAGE
+  JOB_ALERT
+  SYSTEM
+}
+
+enum OAuthProvider {
+  GOOGLE
+  APPLE
+}
+
+enum WorkPreference {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum LanguageProficiency {
+  BASIC
+  CONVERSATIONAL
+  FLUENT
+  NATIVE
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String?
+  role          Role
+  isActive      Boolean        @default(true)
+  oauthProvider OAuthProvider?
+  oauthId       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  jobSeekerProfile JobSeekerProfile?
+  recruiterProfile RecruiterProfile?
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+
+  @@index([role])
+  @@unique([oauthProvider, oauthId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model JobSeekerProfile {
+  id                     String          @id @default(uuid())
+  userId                 String          @unique
+  firstName              String
+  lastName               String
+  photoUrl               String?
+  headline               String?
+  location               String?
+  phone                  String?
+  skills                 String[]        @default([])
+  summary                String?
+  githubUrl              String?
+  linkedinUrl            String?
+  portfolioUrl           String?
+  preferredLocations     String[]        @default([])
+  workPreference         WorkPreference?
+  expectedSalary         Int?
+  noticePeriod           String?
+  employmentPreferences  JobType[]       @default([])
+  isPublic               Boolean         @default(true)
+  isVisibleToRecruiters  Boolean         @default(true)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumes       Resume[]
+  applications  Application[]
+  savedJobs     SavedJob[]
+  jobAlerts     JobAlert[]
+  experiences   Experience[]
+  educations    Education[]
+  projects      Project[]
+  certifications Certification[]
+  achievements  Achievement[]
+  languages     Language[]
+}
+
+model Experience {
+  id                 String    @id @default(uuid())
+  jobSeekerProfileId String
+  title              String
+  company            String
+  location           String?
+  startDate          DateTime
+  endDate            DateTime?
+  isCurrent          Boolean   @default(false)
+  description        String?
+  createdAt          DateTime  @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Education {
+  id                 String    @id @default(uuid())
+  jobSeekerProfileId String
+  institution        String
+  degree             String
+  fieldOfStudy       String?
+  startDate          DateTime
+  endDate            DateTime?
+  description        String?
+  createdAt          DateTime  @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Project {
+  id                 String   @id @default(uuid())
+  jobSeekerProfileId String
+  title              String
+  description        String?
+  url                String?
+  techStack          String[] @default([])
+  createdAt          DateTime @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Certification {
+  id                 String    @id @default(uuid())
+  jobSeekerProfileId String
+  name               String
+  issuer             String?
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  credentialUrl      String?
+  createdAt          DateTime  @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Achievement {
+  id                 String    @id @default(uuid())
+  jobSeekerProfileId String
+  title              String
+  description        String?
+  date               DateTime?
+  createdAt          DateTime  @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Language {
+  id                 String              @id @default(uuid())
+  jobSeekerProfileId String
+  name               String
+  proficiency        LanguageProficiency
+  createdAt          DateTime            @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model RecruiterProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  fullName   String
+  title      String?
+  phone      String?
+  companyId  String?
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id])
+  jobs    Job[]
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  website     String?
+  industry    String?
+  size        String?
+  description String?
+  logoUrl     String?
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  recruiters RecruiterProfile[]
+  jobs       Job[]
+}
+
+model Resume {
+  id                 String   @id @default(uuid())
+  jobSeekerProfileId String
+  fileName           String
+  fileUrl            String
+  isPrimary          Boolean  @default(false)
+  parsedData         Json?
+  createdAt          DateTime @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Job {
+  id               String    @id @default(uuid())
+  companyId        String
+  recruiterId      String
+  title            String
+  description      String
+  requirements      String?
+  location         String?
+  isRemote         Boolean   @default(false)
+  type             JobType
+  status           JobStatus @default(DRAFT)
+  minSalary        Int?
+  maxSalary        Int?
+  currency         String?   @default("USD")
+  skills           String[]  @default([])
+  applicationDeadline DateTime?
+  publishedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  company      Company           @relation(fields: [companyId], references: [id])
+  recruiter    RecruiterProfile  @relation(fields: [recruiterId], references: [id])
+  applications Application[]
+  savedBy      SavedJob[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([title])
+}
+
+model SavedJob {
+  id                 String   @id @default(uuid())
+  jobSeekerProfileId String
+  jobId              String
+  createdAt          DateTime @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobSeekerProfileId, jobId])
+  @@index([jobSeekerProfileId])
+}
+
+model JobAlert {
+  id                 String   @id @default(uuid())
+  jobSeekerProfileId String
+  keyword            String?
+  location           String?
+  jobType            JobType?
+  createdAt          DateTime @default(now())
+
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobSeekerProfileId])
+}
+
+model Application {
+  id                 String            @id @default(uuid())
+  jobId              String
+  jobSeekerProfileId String
+  resumeId           String?
+  status             ApplicationStatus @default(APPLIED)
+  coverLetter         String?
+  recruiterNotes      String?
+  appliedAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobSeekerProfile JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, jobSeekerProfileId])
+  @@index([jobId])
+  @@index([jobSeekerProfileId])
+  @@index([status])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
