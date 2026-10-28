@@ -20,9 +20,8 @@ export type CreateJobPayload = Pick<
   Partial<Pick<Job, 'location' | 'requirements' | 'minSalary' | 'maxSalary' | 'currency' | 'applicationDeadline'>>;
 
 export const jobsApi = {
-  search: (params: JobSearchParams) =>
-    apiClient.get<PaginatedResult<Job>>('/jobs', { params }).then((r) => {
-      if (!USE_DUMMY_DATA || r.data.total > 0) return r.data;
+  search: async (params: JobSearchParams): Promise<PaginatedResult<Job>> => {
+    const dummyResult = () => {
       const { page = 1, pageSize = 10 } = params;
       const q = params.q?.toLowerCase();
       const matches = dummyJobs.filter(
@@ -32,7 +31,15 @@ export const jobsApi = {
           (params.isRemote === undefined || j.isRemote === params.isRemote)
       );
       return { items: matches.slice((page - 1) * pageSize, page * pageSize), total: matches.length, page, pageSize };
-    }),
+    };
+    try {
+      const { data } = await apiClient.get<PaginatedResult<Job>>('/jobs', { params });
+      return USE_DUMMY_DATA && data.total === 0 ? dummyResult() : data;
+    } catch (err) {
+      if (USE_DUMMY_DATA) return dummyResult();
+      throw err;
+    }
+  },
 
   getById: (id: string) => {
     const dummy = USE_DUMMY_DATA ? dummyJobs.find((j) => j.id === id) : undefined;
