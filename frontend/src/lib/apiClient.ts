@@ -1,7 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
-export const apiClient = axios.create({ baseURL: '/api/v1' });
+const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+
+export const apiClient = axios.create({ baseURL: `${API_URL}/api/v1` });
 
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
@@ -16,7 +18,7 @@ let refreshPromise: Promise<string> | null = null;
 const refreshAccessToken = async (): Promise<string> => {
   const refreshToken = useAuthStore.getState().refreshToken;
   if (!refreshToken) throw new Error('No refresh token available');
-  const { data } = await axios.post('/api/v1/auth/refresh', { refreshToken });
+  const { data } = await axios.post(`${API_URL}/api/v1/auth/refresh`, { refreshToken });
   useAuthStore.getState().setAccessToken(data.accessToken);
   useAuthStore.setState({ refreshToken: data.refreshToken });
   return data.accessToken;
