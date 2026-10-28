@@ -1,4 +1,4 @@
-import { PrismaClient, JobType, JobStatus, Role } from '@prisma/client';
+import { PrismaClient, JobType, JobStatus, Role, ApplicationStatus } from '@prisma/client';
 import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -268,6 +268,90 @@ async function main() {
     }
   }
 
+  await prisma.user.upsert({
+    where: { email: 'admin@jobportal.example.com' },
+    create: { email: 'admin@jobportal.example.com', passwordHash, role: Role.ADMIN },
+    update: {},
+  });
+
+  const seekerSeeds = [
+    {
+      email: 'rahul.seeker@example.com',
+      firstName: 'Rahul',
+      lastName: 'Verma',
+      headline: 'Full Stack Developer',
+      location: 'Bengaluru, India',
+      skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
+      summary: '4 years building web apps for startups.',
+    },
+    {
+      email: 'ananya.seeker@example.com',
+      firstName: 'Ananya',
+      lastName: 'Iyer',
+      headline: 'Product Designer',
+      location: 'San Francisco, CA',
+      skills: ['Figma', 'UX Research', 'Prototyping'],
+      summary: 'Designing healthcare and fintech products.',
+    },
+    {
+      email: 'karan.seeker@example.com',
+      firstName: 'Karan',
+      lastName: 'Mehta',
+      headline: 'DevOps Engineer',
+      location: 'Pune, India',
+      skills: ['Kubernetes', 'Terraform', 'Docker', 'AWS'],
+      summary: 'Cloud automation and CI/CD specialist.',
+    },
+  ];
+
+  const seekerProfiles = [];
+  for (const { email, ...profile } of seekerSeeds) {
+    const user = await prisma.user.upsert({
+      where: { email },
+      create: { email, passwordHash, role: Role.JOB_SEEKER },
+      update: {},
+    });
+    seekerProfiles.push(
+      await prisma.jobSeekerProfile.upsert({
+        where: { userId: user.id },
+        create: { userId: user.id, ...profile },
+        update: profile,
+      })
+    );
+  }
+
+  const publishedJobs = await prisma.job.findMany({
+    where: { status: JobStatus.PUBLISHED },
+    orderBy: { title: 'asc' },
+  });
+  const statuses = [
+    ApplicationStatus.APPLIED,
+    ApplicationStatus.UNDER_REVIEW,
+    ApplicationStatus.SHORTLISTED,
+    ApplicationStatus.INTERVIEW,
+  ];
+  for (const [i, seeker] of seekerProfiles.entries()) {
+    for (const [j, job] of publishedJobs.slice(i, i + 3).entries()) {
+      await prisma.application.upsert({
+        where: { jobId_jobSeekerProfileId: { jobId: job.id, jobSeekerProfileId: seeker.id } },
+        create: {
+          jobId: job.id,
+          jobSeekerProfileId: seeker.id,
+          status: statuses[(i + j) % statuses.length],
+          coverLetter: 'I am excited to apply for this role and believe my experience is a strong fit.',
+        },
+        update: {},
+      });
+    }
+    const saved = publishedJobs[(i + 5) % publishedJobs.length];
+    await prisma.savedJob.upsert({
+      where: { jobSeekerProfileId_jobId: { jobSeekerProfileId: seeker.id, jobId: saved.id } },
+      create: { jobSeekerProfileId: seeker.id, jobId: saved.id },
+      update: {},
+    });
+  }
+
+  console.log(`Seeded ${seekerProfiles.length} job seekers with applications and saved jobs, plus 1 admin.`);
   console.log(`Seeded ${companies.length} companies, ${recruiterProfiles.length} recruiters, ${jobSeeds.length} jobs.`);
   console.log(`All seeded recruiter accounts use password: ${SEED_PASSWORD}`);
 }
