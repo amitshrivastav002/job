@@ -255,6 +255,24 @@ async function main() {
       currency: 'INR',
       skills: ['Compliance', 'Risk Analysis'],
     },
+    ...[
+      { c: 0, title: 'Site Reliability Engineer', description: 'Keep our cloud platform highly available and build observability tooling.', requirements: '3+ years SRE or infrastructure experience, strong Linux and monitoring skills.', location: 'Remote', isRemote: true, type: JobType.FULL_TIME, minSalary: 2000000, maxSalary: 3000000, currency: 'INR', skills: ['Prometheus', 'Grafana', 'Linux', 'Go'] },
+      { c: 0, title: 'Engineering Manager', description: 'Lead a team of backend engineers building core platform services.', requirements: '7+ years engineering, 2+ years managing teams.', location: 'Bengaluru, India', isRemote: false, type: JobType.FULL_TIME, minSalary: 3500000, maxSalary: 5000000, currency: 'INR', skills: ['Leadership', 'System Design', 'Hiring'] },
+      { c: 0, title: 'Technical Writer', description: 'Write developer docs, API references and tutorials for our platform.', requirements: '2+ years technical writing for developer products.', location: 'Remote', isRemote: true, type: JobType.CONTRACT, minSalary: 800000, maxSalary: 1200000, currency: 'INR', skills: ['Technical Writing', 'Markdown', 'APIs'] },
+      { c: 0, title: 'Software Engineering Intern', description: 'Work alongside senior engineers on real features in our cloud console.', requirements: 'Final-year CS student, familiarity with JavaScript or Python.', location: 'Bengaluru, India', isRemote: false, type: JobType.INTERNSHIP, minSalary: 30000, maxSalary: 40000, currency: 'INR', skills: ['JavaScript', 'Python', 'Git'] },
+      { c: 1, title: 'Senior Mobile Developer (React Native)', description: 'Build our patient app for iOS and Android.', requirements: '4+ years mobile development, React Native preferred.', location: 'Remote', isRemote: true, type: JobType.FULL_TIME, minSalary: 120000, maxSalary: 160000, currency: 'USD', skills: ['React Native', 'TypeScript', 'iOS', 'Android'] },
+      { c: 1, title: 'Clinical Operations Coordinator', description: 'Coordinate provider onboarding and day-to-day clinical operations.', requirements: '2+ years in healthcare operations.', location: 'San Francisco, CA', isRemote: false, type: JobType.FULL_TIME, minSalary: 65000, maxSalary: 85000, currency: 'USD', skills: ['Operations', 'Healthcare', 'Scheduling'] },
+      { c: 1, title: 'Machine Learning Engineer', description: 'Develop models that predict patient no-shows and personalise care plans.', requirements: '3+ years ML, Python and production model deployment.', location: 'Remote', isRemote: true, type: JobType.FULL_TIME, minSalary: 140000, maxSalary: 180000, currency: 'USD', skills: ['Python', 'PyTorch', 'MLOps', 'SQL'] },
+      { c: 2, title: 'Backend Engineer (Payments)', description: 'Design reliable, idempotent payment APIs and ledger services.', requirements: '4+ years backend, experience with payments or ledgers.', location: 'Pune, India', isRemote: true, type: JobType.FULL_TIME, minSalary: 1800000, maxSalary: 2800000, currency: 'INR', skills: ['Node.js', 'PostgreSQL', 'Kafka', 'Payments'] },
+      { c: 2, title: 'Risk & Fraud Analyst', description: 'Monitor transactions and build rules to detect fraudulent activity.', requirements: '2+ years in fraud or risk analytics, strong SQL.', location: 'Pune, India', isRemote: false, type: JobType.FULL_TIME, minSalary: 1000000, maxSalary: 1600000, currency: 'INR', skills: ['SQL', 'Fraud Detection', 'Analytics'] },
+      { c: 2, title: 'UI/UX Designer (Part-time)', description: 'Design dashboards and onboarding flows for our lending products.', requirements: '3+ years product design with a strong portfolio.', location: 'Remote', isRemote: true, type: JobType.PART_TIME, minSalary: 600000, maxSalary: 900000, currency: 'INR', skills: ['Figma', 'Design Systems', 'UX'] },
+    ].map(({ c, ...job }) => ({
+      ...job,
+      companyId: companies[c].id,
+      recruiterId: recruiterProfiles[c].id,
+      status: JobStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })),
   ];
 
   for (const job of jobSeeds) {
