@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/+$/, '');
 
 export const apiClient = axios.create({ baseURL: `${API_URL}/api/v1` });
 
