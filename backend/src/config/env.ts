@@ -14,6 +14,7 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(300),
   GOOGLE_CLIENT_ID: z.string().optional(),
   APPLE_CLIENT_ID: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -2,6 +2,8 @@ import fs from 'fs/promises';
 import { AppError } from '../../common/AppError';
 import { prisma } from '../../config/prisma';
 import { resumesRepository } from './resumes.repository';
+import { extractText, scoreResume, type AtsRole } from './resumes.ats';
+import { analyzeWithClaude } from './resumes.ai';
 
 const getJobSeekerProfileOrThrow = async (userId: string) => {
   const profile = await prisma.jobSeekerProfile.findUnique({ where: { userId } });
@@ -31,5 +33,17 @@ export const resumesService = {
     await resumesRepository.delete(resumeId);
     const filePath = `${process.cwd()}/uploads/resumes/${resume.fileUrl.split('/').pop()}`;
     await fs.unlink(filePath).catch(() => undefined);
+  },
+
+  async atsCheck(userId: string, resumeId: string, role: AtsRole) {
+    const profile = await getJobSeekerProfileOrThrow(userId);
+    const resume = await resumesRepository.findById(resumeId);
+    if (!resume || resume.jobSeekerProfileId !== profile.id) throw AppError.notFound('Resume not found');
+
+    const filePath = `${process.cwd()}/uploads/resumes/${resume.fileUrl.split('/').pop()}`;
+    const text = await extractText(filePath);
+    if (!text.trim()) throw AppError.badRequest('Could not read text from this resume (use PDF or DOCX)');
+
+    return scoreResume(text, role, await analyzeWithClaude(text, role));
   },
 };

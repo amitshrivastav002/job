@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { resumesController } from './resumes.controller';
 import { resumeUpload } from './resumes.upload';
+import { validate } from '../../common/validate';
+import { atsCheckSchema } from './resumes.schema';
 
 export const resumesRouter = Router();
 
@@ -16,3 +18,12 @@ resumesRouter.post(
 );
 
 resumesRouter.delete('/:id', requireAuth, requireRole('JOB_SEEKER'), resumesController.remove);
+
+
+resumesRouter.post(
+  '/:id/ats',
+  requireAuth,
+  requireRole('JOB_SEEKER'),
+  validate({ body: atsCheckSchema }),
+  resumesController.atsCheck,
+);

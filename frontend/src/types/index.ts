@@ -185,3 +185,32 @@ export interface AdminSettings {
   googleOAuthEnabled: boolean;
   appleOAuthEnabled: boolean;
 }
+
+export interface AtsCheck {
+  key: string;
+  label: string;
+  score: number;
+  weight: number;
+  source: 'rules' | 'ai';
+}
+
+export interface AtsAiAnalysis {
+  titleAlignment: { score: number; reason: string };
+  experienceRelevance: { score: number; reason: string };
+  achievements: { score: number; reason: string };
+  seniorityFit: { level: 'under' | 'match' | 'over'; reason: string };
+  requirements: { requirement: string; status: 'met' | 'partial' | 'missing'; evidence: string }[];
+  strengths: string[];
+  gaps: string[];
+  rewrites: { original: string; improved: string }[];
+  verdict: string;
+}
+
+export interface AtsResult {
+  score: number;
+  checks: AtsCheck[];
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  suggestions: string[];
+  ai: AtsAiAnalysis | null;
+}

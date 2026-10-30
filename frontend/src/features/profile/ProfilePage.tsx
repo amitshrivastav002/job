@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { profilesApi } from '@/api/profiles';
 import { resumesApi } from '@/api/resumes';
+import { jobsApi } from '@/api/jobs';
 import { useAuthStore } from '@/store/authStore';
 import { Input } from '@/components/Input';
 import { Textarea } from '@/components/Textarea';
@@ -10,11 +11,13 @@ import { Button } from '@/components/Button';
 import { FullPageSpinner } from '@/components/Spinner';
 import { Badge } from '@/components/Badge';
 import { SectionEditor } from './SectionEditor';
+import { AtsReport } from './AtsReport';
 import type {
   Achievement,
   Certification,
   Education,
   Experience,
+  Job,
   Language,
   Project,
 } from '@/types';
@@ -104,6 +107,13 @@ const JobSeekerFields = () => {
       queryClient.invalidateQueries({ queryKey: ['resumes'] });
       queryClient.invalidateQueries({ queryKey: ['profile', 'job-seeker'] });
     },
+  });
+
+  const [roleId, setRoleId] = useState('');
+  const { data: roles } = useQuery({ queryKey: ['ats-roles'], queryFn: () => jobsApi.search({ pageSize: 50 }) });
+  const role = roles?.items.find((j) => j.id === roleId);
+  const atsCheck = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: Job }) => resumesApi.atsCheck(id, role),
   });
 
   const removeResume = useMutation({
@@ -299,18 +309,41 @@ const JobSeekerFields = () => {
 
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h2 className="font-semibold text-slate-900">Resumes</h2>
+        <label className="mt-3 block text-xs text-slate-500">
+          Target role (for ATS check)
+          <select
+            className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
+          >
+            <option value="">Select a role...</option>
+            {roles?.items.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.title}{j.company?.name ? ` - ${j.company.name}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="mt-3 flex flex-col gap-2">
           {resumes?.map((r) => (
             <div key={r.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
               <span>
                 {r.fileName} {r.isPrimary && <Badge tone="green">Primary</Badge>}
               </span>
-              <Button variant="ghost" onClick={() => removeResume.mutate(r.id)}>
-                Remove
-              </Button>
+              <span className="flex gap-1">
+                <Button variant="ghost" disabled={!role} onClick={() => role && atsCheck.mutate({ id: r.id, role })}>
+                  Check ATS
+                </Button>
+                <Button variant="ghost" onClick={() => removeResume.mutate(r.id)}>
+                  Remove
+                </Button>
+              </span>
             </div>
           ))}
         </div>
+        {atsCheck.isPending && <p className="mt-2 text-xs text-slate-500">Analyzing (AI review can take ~20s)...</p>}
+        {atsCheck.isError && <p className="mt-2 text-xs text-red-600">Could not analyze this resume.</p>}
+        {atsCheck.data && <AtsReport result={atsCheck.data} />}
         <input
           type="file"
           accept=".pdf,.doc,.docx"

@@ -21,4 +21,9 @@ export const resumesController = {
     await resumesService.remove(req.user.id, req.params.id);
     res.status(204).send();
   }),
+
+  atsCheck: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw AppError.unauthorized();
+    res.status(200).json(await resumesService.atsCheck(req.user.id, req.params.id, req.body));
+  }),
 };

@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { Resume } from '@/types';
+import type { AtsResult, Job, Resume } from '@/types';
 
 export const resumesApi = {
   list: () => apiClient.get<Resume[]>('/resumes').then((r) => r.data),
@@ -13,4 +13,7 @@ export const resumesApi = {
   },
 
   remove: (id: string) => apiClient.delete<void>(`/resumes/${id}`).then((r) => r.data),
+
+  atsCheck: (id: string, role: Pick<Job, 'title' | 'description' | 'requirements' | 'skills'>) =>
+    apiClient.post<AtsResult>(`/resumes/${id}/ats`, role).then((r) => r.data),
 };
